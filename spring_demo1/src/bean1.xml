@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--配置user对象的创建-->
+    <bean id="user" class="com.company.dao.User"></bean>
+
+    <!--配置Book对象的创建-->
+    <bean id="book" class="com.company.dao.Book">
+        <!--set方法注入属性
+            name:类里面属性的名称
+            value：向属性注入的值
+        -->
+        <property name="bname" value="易经经"></property>
+        <property name="bauthor" value="达摩老祖"></property>
+<!--        &lt;!&ndash;属性设置null值&ndash;&gt;-->
+<!--        <property name="address">-->
+<!--            <null></null>-->
+<!--        </property>-->
+        <!--属性值包含特殊符号
+            1把<>进行转义
+            2把特殊符号内容写到CDATA
+        -->
+        <property name="address">
+            <value><![CDATA[<<南京>>]]></value>
+        </property>
+    </bean>
+
+    <!--配置Orders对象的创建-->
+    <bean id="orders" class="com.company.dao.Orders">
+        <!--有参数的构造函数进行属性注入
+            name:类里面属性的名称
+            value：向属性注入的值
+            index:类里面属性的索引值
+        -->
+        <constructor-arg name="oname" value="手机"></constructor-arg>
+        <constructor-arg name="address" value="北京"></constructor-arg>
+    </bean>
+
+<!--    &lt;!&ndash;配置Book对象的创建&ndash;&gt;-->
+<!--    <bean id="book" class="com.company.dao.Book" p:bname="九阳神功" p:bauthor="张无忌">-->
+<!--    </bean>-->
+</beans>

@@ -1,0 +1,42 @@
+##################################################################################
+1、Spring有两种类型bean，一种普通bean，另外一种工厂bean（FactoryBean）
+2、普通bean：在配置文件中定义bean类型就是返回类型
+3、工厂bean：在配置文件定义bean类型可以和返回类型不一样
+##################################################################################
+1.FactoryBean的实现
+    第一步 创建类，让这个类作为工厂bean，实现接口 FactoryBean
+    第二步 实现接口里面的方法，在实现的方法中定义返回的bean类型
+        public class MyBean implements FactoryBean<Course> {
+            //定义返回的Bean
+            @Override
+            public Course getObject() throws Exception {
+                Course course = new Course();
+                course.setCname("Java");
+                return course;
+            }
+
+            @Override
+            public Class<?> getObjectType() {
+                return null;
+            }
+
+            @Override
+            public boolean isSingleton() {
+                return FactoryBean.super.isSingleton();
+            }
+        }
+    (2)配置文件中
+        <bean id="myBean" class="com.company.spring.factorybean.MyBean">
+        </bean>
+    (3)测试时，不要用MyBean对象，需要使用定义的返回对象
+        @Test
+        public void testMyBean(){
+            //1.加载配置创建的对象
+            ApplicationContext applicationContext = new ClassPathXmlApplicationContext("bean3.xml");
+            //2.获取配置创建的对象
+            Course course = applicationContext.getBean("myBean",Course.class);
+            //3.测试
+            System.out.println(course.toString());
+        }
+
+

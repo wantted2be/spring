@@ -1,0 +1,171 @@
+1、什么是注解
+（1）注解是代码特殊标记，格式：@注解名称(属性名称=属性值, 属性名称=属性值..)
+（2）使用注解，注解作用在类上面，方法上面，属性上面
+（3）使用注解目的：简化xml配置
+#####################################################################################################
+2、Spring针对Bean管理中创建对象提供注解，以下四个注解功能是一样的，都可以用来创建bean实例
+（1）@Component  普通组件
+（2）@Service    一般用在业务逻辑层或者是service层
+（3）@Controller 一般用在web层
+（4）@Repository 一般用在dao层或者是持久层
+#####################################################################################################
+3、基于注解方式实现对象创建
+    （1）引入依赖
+        spring-aop-5.2.9.RELEASE
+    （2）开启组件扫描(引入context名称空间，开启扫描)
+        <!--开启组件扫描
+            1.如果扫描多个包，用逗号隔开
+            2.扫描公共的上层目录
+        -->
+        <context:component-scan base-package="com.company.spring"></context:component-scan>
+    （3）创建类，在类上面添加创建对象注解
+        //在注解里面value值可以省不写，默认值是首字母小写的类名称
+        @Component(value = "userService")  //<bean id="userService" class="com.com..."></bean>
+        public class UserService {
+            public void add(){
+                System.out.println("service add....");
+            }
+        }
+    （4）测试
+        @Test
+        public void testService(){
+            ApplicationContext applicationContext = new ClassPathXmlApplicationContext("bean1.xml");
+            UserService userService = applicationContext.getBean("userService",UserService.class);
+            userService.add();
+        }
+#####################################################################################################
+4、开启组件扫描细节配置
+
+    <!--示例1
+        use-default-filters="false" 表示现在不使用默认filter，自己配置filter
+        context:include-filter，设置扫描哪些内容
+    -->
+    <context:component-scan base-package="com.company.spring" use-default-filters="false">
+        <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+
+        <!--示例2
+            下面配置扫描包所有内容
+            context:exclude-filter： 设置哪些内容不进行扫描
+        -->
+        <context:component-scan base-package="com.atguigu">
+            <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+        </context:component-scan>
+#####################################################################################################
+5、基于注解方式实现属性注入
+    1.@Autowired：根据属性类型进行自动装配
+        （1）把service和dao对象创建，在service和dao类添加创建对象注解
+        （2）在service注入dao对象，在service类添加dao类型属性，在属性上面使用注解
+            public interface UserDao {
+                public void add();
+            }
+            //
+            @Repository
+            public class UserDaoImpl implements UserDao{
+
+                @Override
+                public void add() {
+                    System.out.println("dao add...");
+                }
+            }
+            //
+            //在注解里面value值可以省不写，默认值是首字母小写的类名称
+            @Service(value = "userService")  //<bean id="userService" class="com.com..."></bean>
+            public class UserService {
+
+                //定义dao类型的属性,不需要添加setter方法
+                @Autowired
+                private UserDao userDao;
+
+                public void add(){
+                    System.out.println("service add....");
+                    userDao.add();
+                }
+            }
+        （3)测试
+            @Test
+            public void testService(){
+                ApplicationContext applicationContext = new ClassPathXmlApplicationContext("bean1.xml");
+                UserService userService = applicationContext.getBean("userService",UserService.class);
+                userService.add();
+            }
+    2.@Qualifier：根据名称进行注入  这个@Qualifier注解的使用，和上面@Autowired一起使用
+        （1）把service和dao对象创建，在service和dao类添加创建对象注解
+        （2）在service注入dao对象，在service类添加dao类型属性，在属性上面使用注解
+            public interface UserDao {
+                public void add();
+            }
+            //
+            @Repository
+            public class UserDaoImpl implements UserDao{
+
+                @Override
+                public void add() {
+                    System.out.println("dao add...");
+                }
+            }
+            //
+            //在注解里面value值可以省不写，默认值是首字母小写的类名称
+            @Service(value = "userService")  //<bean id="userService" class="com.com..."></bean>
+            public class UserService {
+
+                //定义dao类型的属性,不需要添加setter方法
+                @Autowired
+                @Qualifier(value = "userDaoImpl")  // value值是实现类根据名称进行对象创建的实例
+                private UserDao userDao;
+
+                public void add(){
+                    System.out.println("service add....");
+                    userDao.add();
+                }
+            }
+        （3)测试
+            @Test
+            public void testService(){
+                ApplicationContext applicationContext = new ClassPathXmlApplicationContext("bean1.xml");
+                UserService userService = applicationContext.getBean("userService",UserService.class);
+                userService.add();
+            }
+    3.@Resource：可以根据类型注入，可以根据名称注入
+        //@Resource //根据类型进行注入
+        @Resource(name = "userDaoImpl1") //根据名称进行注入 private UserDao userDao;
+    4.@Value：注入普通类型属性
+        @Value(value = "abc")
+        private String name;
+#####################################################################################################
+6、完全注解开发
+（1）创建配置类，替代xml配置文件
+    @Configuration  //配置类，替代xml配置文件
+    @ComponentScan(basePackages = {"com.company.spring"})  //开启组件扫描
+    public class SpringConfig {
+    }
+        （2）把service和dao对象创建，在service和dao类添加创建对象注解
+        （3）在service注入dao对象，在service类添加dao类型属性，在属性上面使用注解
+            public interface UserDao {
+                public void add();
+            }
+            //
+            @Repository
+            public class UserDaoImpl implements UserDao{
+
+                @Override
+                public void add() {
+                    System.out.println("dao add...");
+                }
+            }
+            //
+            //在注解里面value值可以省不写，默认值是首字母小写的类名称
+            @Service(value = "userService")  //<bean id="userService" class="com.com..."></bean>
+            public class UserService {
+
+                //定义dao类型的属性,不需要添加setter方法
+                @Autowired
+                @Qualifier(value = "userDaoImpl")  // value值是实现类根据名称进行对象创建的实例
+                private UserDao userDao;
+
+                public void add(){
+                    System.out.println("service add....");
+                    userDao.add();
+                }
+            }
+（2）编写测试类

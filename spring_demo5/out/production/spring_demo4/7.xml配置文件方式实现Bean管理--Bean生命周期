@@ -1,0 +1,57 @@
+########################################################################################################
+1、生命周期:从对象创建到对象销毁的过程
+2、bean生命周期
+（1）通过构造器创建bean实例（无参数构造）
+（2）为bean的属性设置值和对其他bean引用（调用set方法）
+（3）调用bean的初始化的方法（需要进行配置初始化的方法）
+（4）bean可以使用了（对象获取到了）
+（5）当容器关闭时候，调用bean的销毁的方法（需要进行配置销毁的方法）
+########################################################################################################
+(1)创建类,
+public class Orders {
+    private String oname;
+
+    public Orders() {
+        System.out.println("第一步，执行无参数构造函数");
+    }
+
+    public void setOname(String oname) {
+        this.oname = oname;
+        System.out.println("第二步，调用set方法设置属性的值");
+    }
+    //创建执行的初始化方法
+    public void initMethod(){
+        System.out.println("第三步，调用bean的初始化的方法");
+    }
+    //创建执行销毁的方法
+    public void destroyMethod(){
+        System.out.println("第五步，执行bean的销毁的方法");
+    }
+}
+（2）配置
+    <bean id="orders" class="com.company.spring.Bean.Orders" init-method="initMethod" destroy-method="destroyMethod">
+        <property name="oname" value="手机"></property>
+    </bean>
+（3）测试
+@Test
+    public void testBean1(){
+        //1.加载配置创建的对象
+        ApplicationContext applicationContext = new ClassPathXmlApplicationContext("bean4.xml");
+        //2.获取配置创建的对象
+        Orders orders = applicationContext.getBean("orders", Orders.class);
+        //3.测试
+        System.out.println("第四步，获取bean对象");
+        System.out.println(orders);
+        //4.销毁对象
+        ((ClassPathXmlApplicationContext)applicationContext).close();
+    }
+########################################################################################################
+4、bean的后置处理器，bean生命周期有七步
+（1）通过构造器创建bean实例（无参数构造）
+（2）为bean的属性设置值和对其他bean引用（调用set方法）
+（3）把bean实例传递bean后置处理器的方法postProcessBeforeInitialization
+（4）调用bean的初始化的方法（需要进行配置初始化的方法）
+（5）把bean实例传递bean后置处理器的方法 postProcessAfterInitialization
+（6）bean可以使用了（对象获取到了）
+（7）当容器关闭时候，调用bean的销毁的方法（需要进行配置销毁的方法）
+########################################################################################################

@@ -1,0 +1,7 @@
+#1.整个Spring5框架的代码基于Java8，运行时兼容JDK9，许多不建议使用的类和方法在代码库中删除
+#2.Spring 5.0框架自带了通用的日志封装 
+###2.1Spring5已经移除Log4jConfigListener，官方建议使用Log4j2 
+###2.2Spring5框架整合Log4j2
+* 第一步 引入jar包
+![](.17.spring5新功能_images/601b868d.png)
+* 第二步 创建log4j2.xml配置文件

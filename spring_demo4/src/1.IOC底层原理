@@ -1,0 +1,24 @@
+1.什么是IOC
+  （1）控制反转，把对象创建和对象之间的调用过程，交给 Spring 进行管理
+  （2）使用 IOC 目的：为了耦合度降低
+  （3）做入门案例就是 IOC 实现
+2、IOC 底层原理
+  （1）xml 解析、工厂模式、反射
+3.IOC底层原理过程
+  第一步，xml配置文件，配置创建的对象 eg:
+  <bean id="user" class="com.company.dao.User"></bean>
+  第二部，有service类和DAO类，创建工厂类
+  class UserFactory(){
+      public static UserDao getDao(){
+          String classValue = class属性值;  //xml解析获得
+          Class clazz = Class.forName(classValue);  //通过反射创建对象
+          return (UserDao)clazz.newInstance();
+      }
+  }
+4.IOC接口（BeanFactory接口）
+  （1）IOC 思想基于 IOC 容器完成，IOC容器底层就是对象工厂
+  （2）Spring 提供 IOC 容器实现两种方式：（两个接口）
+    （i）BeanFactory：IOC 容器基本实现，是 Spring 内部的使用接口，不提供开发人员进行使用
+        * 加载配置文件时候不会创建对象，在获取对象（使用）才去创建对象
+    （ii）ApplicationContext：BeanFactory 接口的子接口，提供更多更强大的功能，一般由开发人员进行使用
+        * 加载配置文件时候就会把在配置文件对象进行创建

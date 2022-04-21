@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+<!--    &lt;!&ndash;内部bean,配置创建的对象&ndash;&gt;-->
+<!--    <bean id="emp" class="com.company.bean.Emp">-->
+<!--        &lt;!&ndash;设置两个普通的属性&ndash;&gt;-->
+<!--        <property name="ename" value="张三"></property>-->
+<!--        <property name="gender" value="男"></property>-->
+<!--        &lt;!&ndash;对象类型的属性&ndash;&gt;-->
+<!--        <property name="dept">-->
+<!--            <bean id="dept" class="com.company.bean.Dept">-->
+<!--                <property name="dname" value="保安部"></property>-->
+<!--            </bean>-->
+<!--        </property>-->
+<!--    </bean>-->
+    <!--内部bean,配置创建的对象-->
+    <bean id="emp" class="com.company.bean.Emp">
+        <!--设置两个普通的属性-->
+        <property name="ename" value="张三"></property>
+        <property name="gender" value="男"></property>
+        <property name="dept" ref="dept"></property>
+    </bean>
+    <bean id="dept" class="com.company.bean.Dept">
+        <property name="dname" value="财务部"></property>
+    </bean>
+</beans>

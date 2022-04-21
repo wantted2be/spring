@@ -1,0 +1,292 @@
+#1.事务概念
+（1）事务是数据库操作最基本单元，逻辑上一组操作，要么都成功，如果有一个失败所有操作都失败  
+（2）典型场景：银行转账
+* lucy 转账100元 给mary
+* lucy少100，mary多100
+#2.事务四个特性（ACID）
+（1）原子性  
+（2）一致性  
+（3）隔离性  
+（4）持久性
+#3.事务操作（搭建事务操作环境）
+![](.16.事务操作_images/925fd7e4.png)
+###3.1创建数据库表，添加记录
+![](.16.事务操作_images/8629a8a7.png)
+###3.2创建service，搭建dao，完成对象创建和注入关系
+* 配置文件引入P名称空间
+* 开启组件扫描
+* 配置数据库连接池
+* 在JdbcTemplate注入DataSource
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!--开启组件扫描-->
+    <context:component-scan base-package="com.company.spring"></context:component-scan>
+    
+    <!--    引入外部属性文件-->
+    <context:property-placeholder location="classpath:jdbc.properties"></context:property-placeholder>
+    <!-- 数据库连接池 -->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" destroy-method="close">
+        <property name="url" value="${prop.url}" />
+        <property name="username" value="${prop.username}" />
+        <property name="password" value="${prop.password}" />
+        <property name="driverClassName" value="${prop.driverClassName}" />
+    </bean>
+
+    <!-- JdbcTemplate对象 -->
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <!--注入dataSource-->
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+</beans>
+```
+* 编写dao接口，dao实现类,userservice实现类
+* service注入dao，在dao注入JdbcTemplate
+```java
+public interface UserDao {
+}
+@Repository
+public class UserDaoImpl implements UserDao{
+    //注入JdbcTemplate
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+}
+@Service
+public class UserService {
+    //注入dao
+    @Autowired
+    private UserDao userDao;
+}
+```
+###3.3在dao创建两个方法：多钱和少钱的方法，在service创建方法（转账的方法）
+```java
+    @Override
+    public void addMoney() {
+        String sql = "update t_account set money = money-? where username=?";
+        jdbcTemplate.update(sql,100,"mary");
+    }
+
+    @Override
+    public void reduceMoney() {
+        String sql = "update t_account set money = money-? where username=?";
+        jdbcTemplate.update(sql,100,"lucy");
+    }
+
+    //转账的方法
+    public void accountMoney(){
+        userDao.reduceMoney();  //lucy少100
+        userDao.addMoney();  //Mary多100
+    }
+```
+###3.4上面代码，如果正常执行没有问题的，但是如果代码执行过程中出现异常，有问题
+```java
+    public void accountMoney(){
+        userDao.reduceMoney();  //lucy少100
+        int i = 10 / 0;  //模拟异常
+        userDao.addMoney();  //Mary多100
+    }
+```
+（1）上面问题如何解决呢？  
+使用事务进行解决  
+（2）事务操作过程
+* 第一步 开启事务
+* 第二步 进行业务操作
+* 第三步 没有发生异常，提交事务
+* 第四步 出现异常，事务回滚
+#4.事务操作，spring事务管理介绍
+###4.1事务添加到JavaEE三层结构里面Service层（业务逻辑层）
+###4.2在Spring进行事务管理操作有两种方式：
+* 编程式事务管理（一般不使用）
+* 声明式事务管理（使用）
+###4.3声明式事务管理
+* 基于注解方式（使用）
+* 基于xml配置文件方式（一般不使用）
+###4.4在Spring进行声明式事务管理，底层使用AOP原理
+###4.5Spring事务管理API
+* 提供一个接口，代表事务管理器，这个接口针对不同的框架提供不同的实现类
+![](.16.事务操作_images/60eccc76.png)
+#5.事务操作--注解声明式事务管理
+###5.1在spring配置文件配置事务管理器
+```xml
+    <!--创建一个事务管理器-->
+    <bean id="dataSourceTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!--注入数据源-->
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+```
+###5.2在spring配置文件，开启事务注解
+* （1）在spring配置文件引入名称空间 tx
+```xml
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+                           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+```
+* （2）开启事务注解
+```xml
+    <!--开启事务的注解-->
+    <tx:annotation-driven transaction-manager="dataSourceTransactionManager"></tx:annotation-driven>
+```
+### 5.3在service类上面（或者service类里面方法上面）添加事务注解
+* （1）@Transactional，这个注解添加到类上面，也可以添加方法上面
+* （2）如果把这个注解添加类上面，这个类里面所有的方法都添加事务
+* （3）如果把这个注解添加方法上面，为这个方法添加事务
+```java
+@Service
+@Transactional
+public class UserService {
+    //注入dao
+    @Autowired
+    private UserDao userDao;
+    //转账的方法
+    public void accountMoney(){
+    }
+}
+```
+#6.事务操作--声明式管理参数配置
+###6.1在service类上面添加注解@Transactional，在这个注解里面可以配置事务相关参数
+![](.16.事务操作_images/73091b6a.png)
+###6.2propagation：事务传播行为
+* 多事务方法直接进行调用，这个过程中事务 是如何进行管理的
+![](.16.事务操作_images/2d3f275b.png)
+![](.16.事务操作_images/1e52043e.png)
+```java
+@Transactional(propagation = Propagation.REQUIRED)
+```
+###6.3ioslation：事务隔离级别
+* 事务有特性成为隔离性，多事务操作之间不会产生影响。不考虑隔离性产生很多问题
+* 有三个读问题：脏读、不可重复读、虚（幻）读
+* 脏读：一个未提交事务读取到另一个未提交事务的数据
+![](.16.事务操作_images/d71e03d0.png)
+* 不可重复读：一个未提交事务读取到另一提交事务修改数据
+![](.16.事务操作_images/9dad6019.png)
+* 虚读：一个未提交事务读取到另一提交事务添加数据
+* 解决：通过设置事务隔离级别，解决读问题  
+![](.16.事务操作_images/873a22e6.png)
+```java
+@Transactional(propagation = Propagation.REQUIRED,isolation = Isolation.REPEATABLE_READ)
+```
+###6.4、timeout：超时时间
+* 事务需要在一定时间内进行提交，如果不提交进行回滚
+* 默认值是 -1 ，设置时间以秒单位进行计算
+```java
+@Transactional(propagation = Propagation.REQUIRED,isolation = Isolation.REPEATABLE_READ,timeout = -1)
+```
+###6.5、readOnly：是否只读
+* 读：查询操作，写：添加修改删除操作
+* readOnly默认值false，表示可以查询，可以添加修改删除操作
+* 设置readOnly值是true，设置成true之后，只能查询
+```java
+@Transactional(propagation = Propagation.REQUIRED,isolation = Isolation.REPEATABLE_READ,timeout = -1,readOnly = true)
+```
+###6.6、rollbackFor：回滚
+* 设置出现哪些异常进行事务回滚
+###6.7、noRollbackFor：不回滚
+* 设置出现哪些异常不进行事务回滚
+#7.事务操作--声明式事务管理--xml配置文件方式
+###7.1在spring配置文件中进行配置
+* 第一步 配置事务管理器
+```xml
+<!--开启组件扫描-->
+    <context:component-scan base-package="com.company.spring"></context:component-scan>
+
+    <!--    引入外部属性文件-->
+    <context:property-placeholder location="classpath:jdbc.properties"></context:property-placeholder>
+    <!-- 数据库连接池 -->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" destroy-method="close">
+        <property name="url" value="${prop.url}" />
+        <property name="username" value="${prop.username}" />
+        <property name="password" value="${prop.password}" />
+        <property name="driverClassName" value="${prop.driverClassName}" />
+    </bean>
+
+    <!-- JdbcTemplate对象 -->
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <!--注入dataSource-->
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+
+    <!--创建一个事务管理器-->
+    <bean id="dataSourceTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!--注入数据源-->
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+```
+* 第二步 配置通知
+```xml
+    <!--配置通知-->
+    <tx:advice id="txadvice">
+        <!--配置事务的相关参数-->
+        <tx:attributes>
+            <!--指定那种规则的方法上面添加事务-->
+            <tx:method name="accountMoney" propagation="REQUIRES_NEW"/>
+            <tx:method name="account*"/>
+        </tx:attributes>
+    </tx:advice>
+```
+* 第三步 配置切入点和切面
+```xml
+    <!--配置切入点和切面-->
+    <aop:config>
+        <!--配置切入点-->
+        <aop:pointcut id="pt" expression="execution(* com.company.spring.service.*(..))"/>
+        <!--配置切面-->
+        <aop:advisor advice-ref="txadvice" pointcut-ref="pt"></aop:advisor>
+    </aop:config>
+```
+#8.事务操作（完全注解声明式管理）
+1、创建配置类，使用配置类替代xml配置文件
+```java
+@Configuration//配置类
+@ComponentScan(basePackages = "com.company.spring")//开启组件扫描
+@EnableTransactionManagement//开启事务
+public class TxConfig {
+    //创建数据库连接池
+    @Bean
+    public DruidDataSource getDruidDataSource(){
+        DruidDataSource dataSource = new DruidDataSource();
+        dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
+        dataSource.setUrl("jdbc:mysql://localhost:3306/user_db?characterEncoding=utf-8&useSSL=true&serverTimezone=GMT");
+        dataSource.setUsername("root");
+        dataSource.setPassword("123456");
+        return dataSource;
+    }
+    //创建JDBCTemplate对象
+    @Bean
+    public JdbcTemplate getJdbcTemplate(DataSource dataSource){
+        JdbcTemplate jdbcTemplate = new JdbcTemplate();
+        jdbcTemplate.setDataSource(dataSource);
+        return jdbcTemplate;
+    }
+    //创建事务管理器对象
+    @Bean
+    public DataSourceTransactionManager getDataSourceTransactionManager(DataSource dataSource){
+        DataSourceTransactionManager dataSourceTransactionManager = new DataSourceTransactionManager();
+        dataSourceTransactionManager.setDataSource(dataSource);
+        return dataSourceTransactionManager;
+    }
+}
+```
+2.测试类
+```java
+    @Test
+    public void testTransConfig(){
+        ApplicationContext applicationContext = new AnnotationConfigApplicationContext(TxConfig.class);
+        UserService userService = applicationContext.getBean("userService",UserService.class);
+        userService.accountMoney();
+    }
+```
+

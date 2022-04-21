@@ -1,0 +1,115 @@
+1、基于xml方式创建对象
+    （1）在 spring 配置文件中，使用 bean 标签，标签里面添加对应属性，就可以实现对象创建 eg:
+        <bean id="user" class="com.company.dao.User"></bean>
+    （2）在 bean 标签有很多属性，介绍常用的属性
+        * id 属性：唯一标识
+        * class 属性：类全路径（包类路径）
+        * name:唯一标识，几乎不用了
+        *
+    （3）创建对象时候，默认也是执行无参数构造方法完成对象创建
+2、基于xml方式注入属性  DI：依赖注入，就是注入属性
+    ####注入方式分为三种，setter注入，有参数的构造函数注入，p名称空间注入（简化的setter注入）####
+    1.第一种注入方式：使用 set 方法进行注入
+        （1）创建类，定义属性和对应的 set 方法
+            public class Book {
+
+                //创建属性
+                private String bname;
+                private String bauthor;
+
+                //创建属性对应的setter方法
+                public void setBname(String bname) {
+                    this.bname = bname;
+                }
+
+                public void setBauthor(String bauthor) {
+                    this.bauthor = bauthor;
+                }
+            }
+        (2)在Spring配置文件中，使用Bean标签配置创建的对象，使用property标签注入属性
+            <!--配置Book对象的创建-->
+            <bean id="bean" class="com.company.dao.Book">
+                <!--set方法注入属性
+                    name:类里面属性的名称
+                    value：向属性注入的值
+                -->
+                <property name="bname" value="易经经"></property>
+                <property name="bauthor" value="达摩老祖"></property>
+            </bean>
+        （3）编写测试代码
+            @Test
+            public void testBook1(){
+                //1.加载配置文件
+                ApplicationContext applicationContext = new ClassPathXmlApplicationContext("bean1.xml");
+                //2.获取配置创建的对象
+                Book book = applicationContext.getBean("book",Book.class);
+                //3.测试
+                book.print();
+            }
+    2.第二种注入方式，通过有参数的构造函数来进行属性输入
+        （1）创建类，定义属性，创建属性对应有参数构造方法
+            public class Orders {
+                //定义属性
+                private String oname;
+                private String address;
+
+                //有参数的构造函数
+                public Orders(String oname, String address) {
+                    this.oname = oname;
+                    this.address = address;
+                }
+            }
+        (2)在Spring的配置文件中，使用bean标签配置创建的对象，使用<construct-org>标签进行属性注入
+            <!--配置Orders对象的创建-->
+            <bean id="orders" class="com.company.dao.Orders">
+                <!--有参数的构造函数进行属性注入
+                    name:类里面属性的名称
+                    value：向属性注入的值
+                    index:类里面属性的索引值
+                -->
+                <constructor-arg name="oname" value="手机"></constructor-arg>
+                <constructor-arg name="address" value="北京"></constructor-arg>
+            </bean>
+        （3）编写测试代码
+            @Test
+            public void testOrders(){
+                //1.加载配置文件
+                ApplicationContext applicationContext = new ClassPathXmlApplicationContext("bean1.xml");
+                //2.获取配置创建的对象
+                Orders orders = applicationContext.getBean("orders",Orders.class);
+                //3.测试
+                orders.print();
+            }
+    3.第三种注入方式，p名称空间注入（简化的setter注入）
+        （1）第一步 添加 p 名称空间在配置文件中
+            xmlns:p="http://www.springframework.org/schema/p"
+        （2）创建类，定义属性和对应的 set 方法
+            public class Book {
+
+                //创建属性
+                private String bname;
+                private String bauthor;
+
+                //创建属性对应的setter方法
+                public void setBname(String bname) {
+                    this.bname = bname;
+                }
+
+                public void setBauthor(String bauthor) {
+                    this.bauthor = bauthor;
+                }
+            }
+        (3)在Spring配置文件中，使用Bean标签配置创建的对象，使用p注入属性
+            <!--配置Book对象的创建-->
+            <bean id="book" class="com.company.dao.Book" p:bname="九阳神功" p:bauthor="张无忌">
+            </bean>
+        (4)编写测试代码
+            @Test
+            public void testBook1(){
+                //1.加载配置文件
+                ApplicationContext applicationContext = new ClassPathXmlApplicationContext("bean1.xml");
+                //2.获取配置创建的对象
+                Book book = applicationContext.getBean("book",Book.class);
+                //3.测试
+                book.print();
+            }

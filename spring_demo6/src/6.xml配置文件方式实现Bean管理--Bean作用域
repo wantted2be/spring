@@ -1,0 +1,37 @@
+###################################################################################################
+1、在Spring里面，设置创建bean实例是单实例还是多实例
+2、在Spring里面，默认情况下，bean是单实例对象
+ @Test
+    public void testCollection2(){
+        //1.加载配置创建的对象
+        ApplicationContext applicationContext = new ClassPathXmlApplicationContext("bean2.xml");
+        //2.获取配置创建的对象
+        Book book = applicationContext.getBean("book",Book.class);
+        Book book2 = applicationContext.getBean("book",Book.class);
+        //3.测试
+        //        book.print();
+        System.out.println(book);
+        System.out.println(book2);
+    }
+________________________________________________________________________________________________
+com.company.spring.collectiontype.Book@292b08d6
+com.company.spring.collectiontype.Book@292b08d6     单实例对象
+################################################################################################
+3、如何设置单实例还是多实例
+（1）在spring配置文件bean标签里面有属性（scope）用于设置单实例还是多实例
+（2）scope属性值
+        第一个值 默认值，singleton，表示是单实例对象
+        第二个值 prototype，表示是多实例对象
+（3）singleton和prototype区别
+        第一 singleton单实例，prototype多实例
+        第二 设置scope值是singleton时候，加载spring配置文件时候就会创建单实例对象，
+            设置scope值是prototype时候，不是在加载spring配置文件时候创建 对象，在调用getBean方法时候创建多实例对象
+
+    <!--提取的list集合类型属性注入使用-->
+    <bean id="book" class="com.company.spring.collectiontype.Book" scope="prototype">
+        <property name="list" ref="bookList"></property>
+    </bean>
+________________________________________________________________________________________________
+com.company.spring.collectiontype.Book@292b08d6
+com.company.spring.collectiontype.Book@22555ebf     多实例
+################################################################################################

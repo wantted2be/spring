@@ -1,0 +1,452 @@
+讲解xml注入不同类型属性的具体操作，包括字面量（2），外部bean，内部bean，级联赋值（两种写法），集合属性（数组，List，map），集合里面设置对象
+类型的值，把集合注入部分提取出来。
+1.字面量
+    null值
+        （1）创建类，定义属性和对应的 set 方法
+            public class Book {
+
+                //创建属性
+                private String bname;
+                private String bauthor;
+                private String address;
+
+                //创建属性对应的setter方法
+                public void setBname(String bname) {
+                    this.bname = bname;
+                }
+
+                public void setBauthor(String bauthor) {
+                    this.bauthor = bauthor;
+                }
+
+                public void setAddress(String address) {
+                    this.address = address;
+                }
+
+                public void print(){
+                    System.out.println(this.bname + ':' + this.bauthor + ' ' + this.address);
+                }
+            }
+        (2)在Spring配置文件中，使用Bean标签配置创建的对象，使用property标签注入属性,使用null设置null值
+            <!--配置Book对象的创建-->
+            <bean id="book" class="com.company.dao.Book">
+                <!--set方法注入属性
+                    name:类里面属性的名称
+                    value：向属性注入的值
+                -->
+                <property name="bname" value="易经经"></property>
+                <property name="bauthor" value="达摩老祖"></property>
+                <!--属性设置null值-->
+                <property name="address">
+                    <null></null>
+                </property>
+            </bean>
+        （3）编写测试代码
+            @Test
+            public void testBook1(){
+                //1.加载配置文件
+                ApplicationContext applicationContext = new ClassPathXmlApplicationContext("bean1.xml");
+                //2.获取配置创建的对象
+                Book book = applicationContext.getBean("book",Book.class);
+                //3.测试
+                book.print();
+            }
+    特殊符号
+        （1）创建类，定义属性和对应的 set 方法
+            public class Book {
+
+                //创建属性
+                private String bname;
+                private String bauthor;
+                private String address;
+
+                //创建属性对应的setter方法
+                public void setBname(String bname) {
+                    this.bname = bname;
+                }
+
+                public void setBauthor(String bauthor) {
+                    this.bauthor = bauthor;
+                }
+
+                public void setAddress(String address) {
+                    this.address = address;
+                }
+
+                public void print(){
+                    System.out.println(this.bname + ':' + this.bauthor + ' ' + this.address);
+                }
+            }
+        (2)在Spring配置文件中，使用Bean标签配置创建的对象，使用property标签注入属性,<![CDATA[<<南京>>]]>
+            <!--配置Book对象的创建-->
+            <bean id="book" class="com.company.dao.Book">
+                <!--set方法注入属性
+                    name:类里面属性的名称
+                    value：向属性注入的值
+                -->
+                <property name="bname" value="易经经"></property>
+                <property name="bauthor" value="达摩老祖"></property>
+                <!--属性值包含特殊符号
+                    1把<>进行转义
+                    2把特殊符号内容写到CDATA
+                -->
+                <property name="address">
+                    <value><![CDATA[<<南京>>]]></value>
+                </property>
+            </bean>
+        （3）编写测试代码
+            @Test
+            public void testBook1(){
+                //1.加载配置文件
+                ApplicationContext applicationContext = new ClassPathXmlApplicationContext("bean1.xml");
+                //2.获取配置创建的对象
+                Book book = applicationContext.getBean("book",Book.class);
+                //3.测试
+                book.print();
+            }
+2、外部bean(注入属性)
+    （1）创建两个类service类和dao类 实现在service调用dao里面的方法,也就是把已经注入属性的dao类当成属性注入service类里面
+        public interface UserDao {
+            public void update();
+        }
+        //
+        public class UserDaoImpl implements UserDao{
+
+            @Override
+            public void update() {
+                System.out.println("DAO update...");
+            }
+        }
+        //
+        public class UserService {
+
+            //创建UserDAO属性，生成set方法
+            private UserDao userDao;
+
+            public void setUserDao(UserDao userDao) {
+                this.userDao = userDao;
+            }
+
+            public void add(){
+                System.out.println("service add ...");
+                userDao.update();
+            }
+        }
+    (2)在spring配置文件中进行配置
+        <!--配置service和UserDao对象,注意不要使用接口，而要用实现类的路径-->
+        <bean id="userService" class="com.company.service.UserService">
+            <!--在UserService里面注入UserDao的对象
+                name属性值：类里面的属性名称
+                ref属性:创建的userDao对象的bean标签的id值
+            -->
+            <property name="userDao" ref="userDao"></property>
+        </bean>
+        <bean id="userDao" class="com.company.dao.UserDaoImpl"></bean>
+    (3)测试
+        @Test
+        public void testBean(){
+            //1.加载配置创建的对象
+            ApplicationContext applicationContext = new ClassPathXmlApplicationContext("bean2.xml");
+            //2.获取配置创建的对象
+            UserService userService = applicationContext.getBean("userService",UserService.class);
+            //3.测试
+            userService.add();
+        }
+3.注入属性-内部 bean
+一对多关系：部门和员工,一个部门有多个员工，一个员工属于一个部门,部门是一，员工是多
+在实体类之间表示一对多关系，员工表示所属部门，使用对象类型属性进行表示
+    (1)创建部门和员工类
+        public class Dept {
+            private String dname;
+
+            public void setDname(String dname) {
+                this.dname = dname;
+            }
+
+            @Override
+            public String toString() {
+                return "Dept{" +
+                        "dname='" + dname + '\'' +
+                        '}';
+            }
+        }
+        //
+        public class Emp {
+            private String ename;
+            private String gender;
+            private Dept dept;
+
+            public void setEname(String ename) {
+                this.ename = ename;
+            }
+            public void setGender(String gender) {
+                this.gender = gender;
+            }
+            public void setDept(Dept dept) {
+                this.dept = dept;
+            }
+
+            @Override
+            public String toString() {
+                return "Emp{" +
+                        "ename='" + ename + '\'' +
+                        ", gender='" + gender + '\'' +
+                        ", dept=" + dept +
+                        '}';
+            }
+        }
+    (2)配置内部bean
+        <!--内部bean,配置创建的对象-->
+        <bean id="emp" class="com.company.bean.Emp">
+            <!--设置两个普通的属性-->
+            <property name="ename" value="张三"></property>
+            <property name="gender" value="男"></property>
+            <!--对象类型的属性-->
+            <property name="dept">
+                <bean id="dept" class="com.company.bean.Dept">
+                    <property name="dname" value="保安部"></property>
+                </bean>
+            </property>
+        </bean>
+    (3)测试
+        @Test
+        public void testBean2(){
+            //1.加载配置创建的对象
+            ApplicationContext applicationContext = new ClassPathXmlApplicationContext("bean3.xml");
+            //2.获取配置创建的对象
+            Emp emp = applicationContext.getBean("emp",Emp.class);
+            //3.测试
+            System.out.println(emp.toString());
+        }
+4.注入属性级联赋值
+第一种级联赋值写法
+        <!--内部bean,配置创建的对象-->
+        <bean id="emp" class="com.company.bean.Emp">
+            <!--设置两个普通的属性-->
+            <property name="ename" value="张三"></property>
+            <property name="gender" value="男"></property>
+            <property name="dept" ref="dept"></property>
+        </bean>
+        <bean id="dept" class="com.company.bean.Dept">
+            <property name="dname" value="财务部"></property>
+        </bean>
+第二种级联赋值写法（不想整理了）
+
+5.集合属性（数组，List，map,set）
+    (1)创建类，定义数组，list，map，set类型的属性
+        public class Stu {
+            //1.数组类型的属性
+            private String[] courses;
+            //2.list集合类型的属性
+            private List<String> list;
+            //3.map集合类型的属性
+            private Map<String, String> maps;
+            //4.set集合类型的属性
+            private Set<String> sets;
+
+            public void setCourses(String[] courses) {
+                this.courses = courses;
+            }
+            public void setList(List<String> list) {
+                this.list = list;
+            }
+            public void setMaps(Map<String, String> maps) {
+                this.maps = maps;
+            }
+            public void setSets(Set<String> sets) {
+                this.sets = sets;
+            }
+        }
+    (2)在spring配置文件进行配置
+        <!--集合类型属性注入-->
+        <bean id="stu" class="com.company.spring.collectiontype.Stu">
+            <!--数组类型的属性注入-->
+            <property name="courses">
+                <array>
+                    <value>java</value>
+                    <value>MySql</value>
+                </array>
+            </property>
+            <!--list类型的属性注入-->
+            <property name="list">
+                <list>
+                    <value>张三</value>
+                    <value>三哥</value>
+                </list>
+            </property>
+            <!--map类型的属性注入-->
+            <property name="maps">
+                <map>
+                    <entry key="JAVA" value="java"></entry>
+                    <entry key="MYSQL" value="mysql"></entry>
+                </map>
+            </property>
+            <!--set类型的属性注入-->
+            <property name="sets">
+                <set>
+                    <value>MySql</value>
+                    <value>Java</value>
+                </set>
+            </property>
+        </bean>
+    (3)测试
+        @Test
+        public void testCollection(){
+            //1.加载配置创建的对象
+            ApplicationContext applicationContext = new ClassPathXmlApplicationContext("bean1.xml");
+            //2.获取配置创建的对象
+            Stu stu = applicationContext.getBean("stu",Stu.class);
+            //3.测试
+            stu.print();
+        }
+6.在集合里面设置对象类型值
+    (1)创建类，定义一个对象类型的list
+        public class Course {
+            private String cname;
+
+            public void setCname(String cname) {
+                this.cname = cname;
+            }
+
+            @Override
+            public String toString() {
+                return "Course{" +
+                        "cname='" + cname + '\'' +
+                        '}';
+            }
+        }
+        //
+        public class Stu {
+            //1.数组类型的属性
+            private String[] courses;
+            //2.list集合类型的属性
+            private List<String> list;
+            //3.map集合类型的属性
+            private Map<String, String> maps;
+            //4.set集合类型的属性
+            private Set<String> sets;
+            //5.学生所学的多门课程
+            private List<Course> courseList;
+
+            public void setCourseList(List<Course> courseList) {
+                this.courseList = courseList;
+            }
+            public void setCourses(String[] courses) {
+                this.courses = courses;
+            }
+            public void setList(List<String> list) {
+                this.list = list;
+            }
+            public void setMaps(Map<String, String> maps) {
+                this.maps = maps;
+            }
+            public void setSets(Set<String> sets) {
+                this.sets = sets;
+            }
+            public void print(){
+                System.out.println(Arrays.toString(courses));
+                System.out.println(list);
+                System.out.println(maps);
+                System.out.println(sets);
+                System.out.println(courseList);
+            }
+        }
+    (2)配置文件中进行配置
+        <bean id="stu" class="com.company.spring.collectiontype.Stu">
+            <!--数组类型的属性注入-->
+            <property name="courses">
+                <array>
+                    <value>java</value>
+                    <value>MySql</value>
+                </array>
+            </property>
+            <!--list类型的属性注入-->
+            <property name="list">
+                <list>
+                    <value>张三</value>
+                    <value>三哥</value>
+                </list>
+            </property>
+            <!--map类型的属性注入-->
+            <property name="maps">
+                <map>
+                    <entry key="JAVA" value="java"></entry>
+                    <entry key="MYSQL" value="mysql"></entry>
+                </map>
+            </property>
+            <!--set类型的属性注入-->
+            <property name="sets">
+                <set>
+                    <value>MySql</value>
+                    <value>Java</value>
+                </set>
+            </property>
+            <!--注入list集合类型，值是对象-->
+            <property name="courseList">
+                <list>
+                    <ref bean="course1"></ref>
+                    <ref bean="course2"></ref>
+                </list>
+            </property>
+        </bean>
+        <!--创建多个course对象-->
+        <bean id="course1" class="com.company.spring.collectiontype.Course">
+            <property name="cname" value="Java"></property>
+        </bean>
+        <bean id="course2" class="com.company.spring.collectiontype.Course">
+            <property name="cname" value="MySQL"></property>
+        </bean>
+    (3)测试
+        @Test
+        public void testCollection(){
+            //1.加载配置创建的对象
+            ApplicationContext applicationContext = new ClassPathXmlApplicationContext("bean1.xml");
+            //2.获取配置创建的对象
+            Stu stu = applicationContext.getBean("stu",Stu.class);
+            //3.测试
+            stu.print();
+        }
+7.把集合注入部分提取出来
+    (1)在spring配置文件中引入名称空间 util
+        <?xml version="1.0" encoding="UTF-8"?>
+        <beans xmlns="http://www.springframework.org/schema/beans"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:util="http://www.springframework.org/schema/util"
+           xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                               http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+    (2)使用util标签完成list集合注入提取
+        <!--提取list集合类型属性注入-->
+        <util:list id="bookList">
+            <value>九阳神功</value>
+            <value>九阴正经</value>
+        </util:list>
+        <!--提取的list集合类型属性注入使用-->
+        <bean id="book" class="com.company.spring.collectiontype.Book">
+            <property name="list" ref="bookList"></property>
+        </bean>
+    (3)创建类
+        public class Book {
+            private List<String> list;
+
+            public void setList(List<String> list) {
+                this.list = list;
+            }
+
+            public void print() {
+                System.out.println(list);
+            }
+        }
+    (4)测试
+        @Test
+        public void testCollection2(){
+            //1.加载配置创建的对象
+            ApplicationContext applicationContext = new ClassPathXmlApplicationContext("bean2.xml");
+            //2.获取配置创建的对象
+            Book book = applicationContext.getBean("book",Book.class);
+            //3.测试
+            book.print();
+        }
+
+
+
+
